@@ -1,0 +1,432 @@
+---
+title: '**Kobe Bryant Shot Selection**'
+author: "Yuxiang Wang, Ethan Goldbeck, Aldo, Wenbin Yang,"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    highlight: tango
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+---
+
+<center><img
+src="http://i.imgur.com/xrOu1.png">
+</center>
+
+<p style="font-family: times, serif; font-size:18pt; font-style:italic">
+“Everything negative – pressure, challenges – is all an opportunity for me to rise.”
+</p>
+<div style="text-align: right"> **Kobe Bryant** </div>
+
+# **Introduction**
+
+I am a big fan of basketball, and in this entry we are going to analyze a data set from Kaggle containing the location and circumstances of every field goal attempted by Kobe Bryant
+took during his 20-year career. We are going to use the [tidyverse](https://cran.r-project.org/web/packages/tidyverse/index.html) package for data manipulation, exploration and visualization. 
+Some context information (Reference **[here](https://en.wikipedia.org/wiki/Kobe_Bryant)**): 
+
+> Kobe Bean Bryant (born August 23, 1978) is an American former professional basketball player. He played his entire 20-year career with the Los Angeles Lakers of the National Basketball Association (NBA). He entered the NBA directly from high school and won five NBA championships with the Lakers. Bryant is an 18-time All-Star, 15-time member of the All-NBA Team, and 12-time member of the All-Defensive team. He led the NBA in scoring during two seasons and ranks third on the league's all-time regular season scoring and fourth on the all-time postseason scoring list. He holds the NBA record for the most seasons playing with one franchise for an entire career and is widely regarded as one of the greatest basketball players of all time. Bryant is the first guard in NBA history to play at least 20 seasons.
+
+# **Loading data** {.tabset .tabset-fade .tabset-pills}
+
+```{r message=FALSE, warning=FALSE}
+# Load libraries
+library(ggplot2)
+library(tidyverse)
+library(gridExtra)
+library(knitr)
+
+# Read the stats
+setwd("D:/5415/data.csv")
+shots <- read.csv('data.csv')
+```
+
+Let’s get an idea of what we’re working with.
+
+## Structure 
+```{r message=FALSE, warning=FALSE}
+# Structure
+str(shots)
+```
+
+## Head 
+```{r message=FALSE, warning=FALSE}
+# View first 6 rows
+head(shots)
+```
+
+
+
+##There are some NAs in the `shot_made_flag` column. We can remove all rows with missing values using the `na.omit()` function.
+
+```{r}
+# Remove rows with NAs
+shots <- na.omit(shots)
+```
+
+# **Data Analysis**  
+
+## Shot type 
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+color <- c("FF5733","33FF34","#A569BD","#3498DB","#839192")
+# Shot type
+ggplot() + 
+# We use a different alpha value for jump shots to improve the visualization
+  geom_point(data=shots %>% filter(combined_shot_type=="Jump Shot"),
+             aes(x=lon, y=lat), colour="#FFC300", alpha=0.3) +
+  geom_point(data=shots %>% filter(combined_shot_type!="Jump Shot"),
+             aes(x=lon, y=lat, colour=combined_shot_type), alpha=0.8) +
+  labs(title="Shot type") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.title=element_blank(),
+        plot.title=element_text(hjust=0.5)) 
+```
+
+As we see, most points in the visualization correspond to jump shots. 
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+courtImg.URL <-"https://thedatagame.files.wordpress.com/2016/03/nba_court.jpg" 
+court <- rasterGrob(readJPEG(getURLContent(courtImg.URL)), width=unit(1,"npc"), height=unit(1,"npc")) 
+# Shot type 
+ggplot() + 
+annotation_custom(court, -250, 250, -50, 420)+ 
+# We use a different alpha value for jump shots to improve the visualization 
+geom_point(data=shots %>% filter(combined_shot_type=="Jump Shot"), 
+            aes(x=loc_x, y=loc_y), colour="#FFC300", alpha=0.3) +
+geom_point(data=shots %>% filter(combined_shot_type!="Jump Shot"), 
+            aes(x=loc_x, y=loc_y, colour=combined_shot_type), alpha=0.8) + labs(title="Shot type") + ylim(c(-50, 420))
+# Shot type
+#ggplot() + 
+# We use a different alpha value for jump shots to improve the visualization
+  #geom_point(data=shots %>% filter(combined_shot_type=="Jump Shot"),
+             #aes(x=lon, y=lat), colour="#FFC300", alpha=0.3) + 
+  #geom_point(data=shots %>% filter(combined_shot_type=="Bank Shot"),
+             #aes(x=lon, y=lat,colour=combined_shot_type), alpha=0.8) + 
+  #geom_point(data=shots %>% filter(combined_shot_type=="Dunk"),
+             #aes(x=lon, y=lat, colour=combined_shot_type), alpha=0.8) +
+  #geom_point(data=shots %>% filter(combined_shot_type=="Hook Shot"),
+             #aes(x=lon, y=lat, colour=combined_shot_type), alpha=0.8) +
+  #geom_point(data=shots %>% filter(combined_shot_type=="Layup"),
+             #aes(x=lon, y=lat, colour=combined_shot_type), alpha=0.8) +
+  #geom_point(data=shots %>% filter(combined_shot_type=="Tip Shot"),
+             #aes(x=lon, y=lat, colour=combined_shot_type), alpha=0.8) +
+  #labs(title="Kobe's Shooting Type") +
+  #ylim(c(33.7, 34.0883)) +
+  #theme_void() +
+  #theme(legend.title=element_blank(),
+        #plot.title=element_text(hjust=0.5)) 
+```
+## Shot zone
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+mycolor <- c("#19BA00","#f26120","#a630d1","#277af4","#ffff00")
+# Shot zone range
+p1 <- ggplot(shots, aes(x=lon, y=lat,col=as.factor(shot_zone_range))) +
+  geom_point() +
+  scale_color_manual(values=mycolor) +
+  labs(title="Range of Shooting Zone") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+
+# Frequency for each shot zone range
+p2 <- ggplot(shots, aes(x=fct_infreq(shot_zone_range),col=as.factor(shot_zone_range))) + 
+  geom_bar(fill=c("#ffff00","#a630d1","#19BA00","#f26120","#277af4")) + 
+  labs(y="Frequency") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(), 
+        legend.position="none")
+
+# Subplot
+grid.arrange(p1, p2, layout_matrix=cbind(c(1,2)))
+```
+
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+# Shot zone range
+p1 <- ggplot(shots, aes(x=lon, y=lat)) +
+  geom_point(aes(colour=shot_zone_range)) +
+  labs(title="Shot zone range") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+
+# Frequency for each shot zone range
+p2 <- ggplot(shots, aes(x=fct_infreq(shot_zone_range))) + 
+  geom_bar(aes(fill=shot_zone_range)) +
+  labs(y="Frequency") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(), 
+        legend.position="none")
+
+# Subplot
+grid.arrange(p1, p2, layout_matrix=cbind(c(1,2)))
+```
+
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+# Shot zone area
+p3 <- ggplot(shots, aes(x=lon, y=lat)) +
+  geom_point(aes(colour=shot_zone_area)) +
+  labs(title="Areas of Shooting Zone") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+
+# Frequency for each shot zone area
+p4 <- ggplot(shots, aes(x=fct_infreq(shot_zone_area))) + 
+  geom_bar(aes(fill=shot_zone_area)) +
+  labs(y="Frequency") +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=7),
+        axis.title.x=element_blank(), 
+        legend.position="none")
+
+# Subplot
+grid.arrange(p3, p4, layout_matrix=cbind(c(1,2)))
+```
+
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+# Shot zone basic
+mycolor <- c("#ffff00","#a630d1","#19BA00","#f26120","#277af4","#00FFFF","#FF00FF")
+p5 <- ggplot(shots, aes(x=lon, y=lat, col=shot_zone_basic)) +
+  geom_point() +
+  scale_color_manual(values=mycolor)
+  labs(title="Location for Shotting zone ") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5))
+
+# Frequency for each shot zone basic
+p6 <- ggplot(shots, aes(x=fct_infreq(shot_zone_basic),col=as.factor(shot_zone_basic))) + 
+  geom_bar(fill=c("#277af4","#00FFFF","#ffff00","#19BA00","#FF00FF","#f26120","#a630d1")) +
+  labs(y="Frequency") +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=6.3),
+        axis.title.x=element_blank(), 
+        legend.position="none")
+
+# Subplot
+grid.arrange(p5, p6, layout_matrix=cbind(c(1,2)))
+```
+
+## Shot accuracy 
+
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by shot type 
+shots %>%
+  group_by(action_type) %>%
+  summarise(Accuracy=mean(shot_made_flag),
+            counts=n()) %>%
+  filter(counts>20) %>%
+  ggplot(aes(x=reorder(action_type, Accuracy), y=Accuracy)) + 
+  geom_point(aes(colour=Accuracy), size=3) +
+  scale_colour_gradient(low="#a630d1", high="#ffff00") +
+  labs(title="Accuracy by shot type") +
+  theme_bw() +
+  theme(axis.title.y=element_blank(),
+        legend.position="none",
+        plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+```
+
+```{r  message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by season
+shots %>%
+  group_by(season) %>%
+  summarise(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=season, y=Accuracy, group=1)) +
+  geom_line(aes(colour=Accuracy)) +
+  geom_point(aes(colour=Accuracy), size=3) +
+  scale_colour_gradient(low="#a630d1", high="#ffff00") +
+  labs(title="Accuracy by season", x="Season") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=45, hjust=1),
+        plot.title=element_text(hjust=0.5)) 
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by season in Playoff and Regular Season
+shots %>%
+  group_by(season) %>%
+  summarise(Playoff=mean(shot_made_flag[playoffs==1]),
+            RegularSeason=mean(shot_made_flag[playoffs==0])) %>%
+  ggplot(aes(x=season, group=1)) +
+  geom_line(aes(y=Playoff, colour="Playoff")) +
+  geom_line(aes(y=RegularSeason, colour="RegularSeason")) +
+  geom_point(aes(y=Playoff, colour="Playoff"), size=3) +
+  geom_point(aes(y=RegularSeason, colour="RegularSeason"), size=3) +
+  labs(title="Accuracy by season", 
+       subtitle="Playoff and Regular Season",
+       x="Season", y="Accuracy") +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="bottom",
+        axis.text.x=element_text(angle=45, hjust=1),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle=element_text(hjust=0.5)) 
+```
+
+Notice that the red line is discontinuous because in some seasons Los Angeles Lakers couldn't make the NBA Playoff.
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by season in 2PT Field Goal and 3PT Field Goal
+shots %>%
+  group_by(season) %>%
+  summarise(TwoPoint=mean(shot_made_flag[shot_type=="2PT Field Goal"]),
+            ThreePoint=mean(shot_made_flag[shot_type=="3PT Field Goal"])) %>%
+  ggplot(aes(x=season, group=1)) +
+  geom_line(aes(y=TwoPoint, colour="TwoPoint")) +
+  geom_line(aes(y=ThreePoint, colour="ThreePoint")) +
+  geom_point(aes(y=TwoPoint, colour="TwoPoint"), size=3) +
+  geom_point(aes(y=ThreePoint, colour="ThreePoint"), size=3) +
+  labs(title="Accuracy by season", 
+       subtitle="2PT Field Goal and 3PT Field Goal",
+       x="Season", y="Accuracy") +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="bottom",
+        axis.text.x=element_text(angle=45, hjust=1),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle=element_text(hjust=0.5)) 
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by shot distance
+shots %>%
+  group_by(shot_distance) %>%
+  summarise(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=shot_distance, y=Accuracy)) + 
+  geom_line(aes(colour=Accuracy)) +
+  geom_point(aes(colour=Accuracy), size=2) +
+  scale_colour_gradient(low="#a630d1", high="#ffff00") +
+  labs(title="Accuracy by shot distance", x="Shot distance (ft.)") +
+  xlim(c(0,45)) +
+  theme_bw() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by shot zone range
+p7 <- shots %>%
+  select(lat, lon, shot_zone_range, shot_made_flag) %>%
+  group_by(shot_zone_range) %>%
+  mutate(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=lon, y=lat)) +
+  geom_point(aes(colour=Accuracy)) +
+  scale_colour_gradient(low="red", high="lightgreen") +
+  labs(title="Accuracy by shot zone range") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Accuracy by shot zone area
+p8 <- shots %>%
+  select(lat, lon, shot_zone_area, shot_made_flag) %>%
+  group_by(shot_zone_area) %>%
+  mutate(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=lon, y=lat)) +
+  geom_point(aes(colour=Accuracy)) +
+  scale_colour_gradient(low="red", high="lightgreen") +
+  labs(title="Accuracy by shot zone area") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5))
+
+# Accuracy by shot zone basic
+p9 <- shots %>%
+  select(lat, lon, shot_zone_basic, shot_made_flag) %>%
+  group_by(shot_zone_basic) %>%
+  mutate(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=lon, y=lat)) +
+  geom_point(aes(colour=Accuracy)) +
+  scale_colour_gradient(low="red", high="lightgreen") +
+  labs(title="Accuracy by shot zone basic") +
+  ylim(c(33.7, 34.0883)) +
+  theme_void() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5))
+
+# Subplots
+grid.arrange(p7, p8, p9, layout_matrix=cbind(c(1,2), c(1,3)))
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by minutes remaining
+shots %>%
+  group_by(minutes_remaining) %>%
+  summarise(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=minutes_remaining, y=Accuracy)) + 
+  geom_bar(aes(fill=Accuracy), stat="identity") +
+  scale_fill_gradient(low="#a630d1", high="#ffff00") +
+  labs(title="Accuracy by minutes remaining", x="Minutes remaining")  +
+  theme_bw() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by seconds remaining
+shots %>%
+  group_by(seconds_remaining) %>%
+  summarise(Accuracy=mean(shot_made_flag)) %>%
+  ggplot(aes(x=seconds_remaining, y=Accuracy)) + 
+  geom_bar(aes(fill=Accuracy), stat="identity") +
+  scale_fill_gradient(low="#a630d1", high="#ffff00") +
+  labs(title="Accuracy by seconds remaining", x="Seconds remaining")  +
+  theme_bw() +
+  theme(legend.position="none",
+        plot.title=element_text(hjust=0.5)) 
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by opponent
+shots %>%
+  group_by(opponent) %>%
+  summarise(Accuracy=mean(shot_made_flag)) %>%
+  mutate(Conference=c("Eastern", "Eastern", "Eastern", "Eastern", "Eastern",
+                      "Eastern", "Western", "Western", "Eastern", "Western",
+                      "Western", "Eastern", "Western", "Western", "Eastern",
+                      "Eastern", "Western", "Eastern", "Western", "Western",
+                      "Eastern", "Western", "Eastern", "Eastern", "Western",
+                      "Western", "Western", "Western", "Western", "Eastern",
+                      "Western", "Western", "Eastern" )) %>%
+  ggplot(aes(x=reorder(opponent, -Accuracy), y=Accuracy)) + 
+  geom_bar(aes(fill=Conference), stat="identity") +
+  labs(title="Accuracy by opponent", x="Opponent") +
+  theme_bw() +
+  theme(legend.position="bottom",
+        legend.title=element_blank(),
+        axis.text.x=element_text(angle=45, hjust=1),
+        plot.title=element_text(hjust=0.5))  
+```
+
+```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Accuracy by opponent in 2PT Field Goal and 3PT Field Goal
+shots %>%
+  group_by(opponent) %>%
+  summarise(TwoPoint=mean(shot_made_flag[shot_type=="2PT Field Goal"]),
+            ThreePoint=mean(shot_made_flag[shot_type=="3PT Field Goal"])) %>%
+  ggplot(aes(x=opponent, group=1)) +
+  geom_line(aes(y=TwoPoint, colour="TwoPoint")) +
+  geom_line(aes(y=ThreePoint, colour="ThreePoint")) +
+  geom_point(aes(y=TwoPoint, colour="TwoPoint"), size=3) +
+  geom_point(aes(y=ThreePoint, colour="ThreePoint"), size=3) +
+  labs(title="Accuracy by opponent", 
+       subtitle="2PT Field Goal and 3PT Field Goal",
+       x="Opponent", y="Accuracy") +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="bottom",
+        axis.text.x=element_text(angle=45, hjust=1),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle=element_text(hjust=0.5)) 
+```
